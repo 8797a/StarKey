@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require __DIR__ . '/includes/lib.php';
 require __DIR__ . '/includes/ui.php';
 $products = get_products();
@@ -214,6 +214,10 @@ foreach ($availableProducts as $productId => $product) {
             
         </form>
     </div>
+
+    <footer style="text-align:center; padding:28px 16px 24px; color:var(--text-muted); font-size:13px;">
+        开源地址：<a href="https://github.com/8797a/StarKey" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:none;">https://github.com/8797a/StarKey</a>
+    </footer>
 
     <script>
         function selectProduct(cardEl, price, name) {
