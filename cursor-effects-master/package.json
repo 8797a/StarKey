@@ -1,0 +1,41 @@
+{
+  "name": "cursor-effects",
+  "type": "module",
+  "description": "Old-school cursor effects for your browser built in modern JavaScript.",
+  "version": "1.0.18",
+  "main": "./dist/cjs.cjs",
+  "module": "./dist/esm.js",
+  "types": "./types.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./types.d.ts",
+      "require": "./dist/cjs.cjs",
+      "import": "./dist/esm.js"
+    }
+  },
+  "files": ["dist", "types.d.ts"],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tholman/cursor-effects.git"
+  },
+  "author": "tholman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tholman/cursor-effects/issues"
+  },
+  "homepage": "https://github.com/tholman/cursor-effects#readme",
+  "devDependencies": {
+    "rollup": "^3.29.5",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "prepublish": "npm run build"
+  }
+}

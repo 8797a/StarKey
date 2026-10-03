@@ -1,0 +1,11 @@
+﻿/includes/config.php
+/storage/*
+!/storage/.gitkeep
+*.log
+*.tmp
+*.bak
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

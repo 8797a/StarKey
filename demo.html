@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>发卡网 - 纯前端模拟系统测试版</title>
+    <!-- ...样式同前，略... -->
+    <style>
+        :root {
+            --bg-color: #f8fafc; --text-main: #0f172a; --text-muted: #64748b;
+            --primary: #3b82f6; --primary-hover: #2563eb;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 10px 40px rgba(31, 38, 135, 0.05);
+            --radius-lg: 16px; --radius-md: 10px;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; color: var(--text-main); background-color: var(--bg-color); min-height: 100vh; line-height: 1.6; }
+        
+        .aurora-bg { position: fixed; inset: 0; z-index: -1; background: var(--bg-color); overflow: hidden; pointer-events: none; }
+        .aurora-blob { position: absolute; filter: blur(120px); border-radius: 50%; opacity: 0.6; animation: move 20s infinite alternate ease-in-out; }
+        .blob1 { width: 600px; height: 600px; background: #93c5fd; top: -200px; left: -100px; animation-duration: 25s; }
+        .blob2 { width: 500px; height: 500px; background: #c4b5fd; bottom: -150px; right: -150px; animation-delay: -5s; animation-duration: 22s; }
+        .blob3 { width: 400px; height: 400px; background: #86efac; top: 30%; left: 40%; animation-delay: -10s; animation-duration: 28s; opacity: 0.5; }
+        @keyframes move { 0% { transform: translate(0, 0) scale(1) rotate(0deg); } 33% { transform: translate(5vw, -5vh) scale(1.05) rotate(15deg); } 66% { transform: translate(-5vw, 5vh) scale(0.95) rotate(-10deg); } 100% { transform: translate(2vw, 2vh) scale(1) rotate(5deg); } }
+
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(24px) saturate(150%); border: var(--glass-border); box-shadow: var(--glass-shadow); border-radius: var(--radius-lg); }
+
+        .view-section { display: none; padding-bottom: 120px; animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .wrap { width: min(1200px, 100% - 40px); margin: 40px auto; position: relative; z-index: 1; }
+        .wrap-sm { width: min(1000px, 100% - 40px); margin: 40px auto; position: relative; z-index: 1;}
+        .wrap-xs { width: min(400px, 100% - 40px); margin: auto; padding-top: 10vh; }
+        
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 14px 24px; border-radius: var(--radius-md); font-size: 15px; font-weight: 600; color: #fff; background: var(--primary); border: 1px solid #2563eb; cursor: pointer; text-decoration: none; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); transition: all 0.2s; }
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3); }
+        .btn-danger { background: var(--danger); border-color: #dc2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+        .btn-danger:hover { background: #dc2626; box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3); }
+        
+        .form-control { width: 100%; background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0, 0, 0, 0.08); color: var(--text-main); padding: 14px 16px; border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s; font-family: inherit; }
+        .form-control:focus { border-color: var(--primary); background: rgba(255,255,255,0.9); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; cursor: pointer; }
+        
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .badge-success { background: rgba(16, 185, 129, 0.15); color: #059669; }
+        .badge-danger { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+
+        /* 前台布局 */
+        .site-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .site-title { font-size: 28px; font-weight: 800; margin: 0; color: var(--text-main); }
+        .header-stats { display: flex; gap: 15px; }
+        .h-stat { display: flex; align-items: center; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.03); padding: 8px 16px; border-radius: 999px; font-size: 13px; color: var(--text-muted); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .h-stat span { font-weight: 700; color: var(--text-main); margin-right: 6px; font-size: 15px;}
+        .main-form { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+        .section-title { font-size: 20px; font-weight: 600; color: var(--text-main); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ""; display: block; width: 4px; height: 18px; background: var(--primary); border-radius: 2px; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .product-card { position: relative; display: block; cursor: pointer; background: rgba(255, 255, 255, 0.4); border: 2px solid rgba(255,255,255,0.8); border-radius: var(--radius-lg); padding: 24px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .product-card:hover { border-color: rgba(59, 130, 246, 0.3); background: rgba(255, 255, 255, 0.8); transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .product-card input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+        .product-card.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); box-shadow: 0 0 0 1px var(--primary), 0 8px 24px rgba(59, 130, 246, 0.1); }
+        .product-card.disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
+        .pc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .pc-title { font-size: 18px; font-weight: 600; color: var(--text-main); margin: 0; line-height: 1.4; }
+        .pc-price { font-size: 28px; font-weight: 800; color: var(--text-main); margin-bottom: 20px; }
+        .pc-price span { font-size: 16px; color: var(--text-muted); font-weight: 500; margin-right: 2px;}
+        .pc-stock { font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 16px; }
+        .sidebar { position: sticky; top: 40px; }
+        .checkout-panel { padding: 32px; background: rgba(255, 255, 255, 0.7); }
+        .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px dashed rgba(0,0,0,0.08); font-size: 15px; color: var(--text-muted); }
+        .summary-row:last-of-type { border-bottom: none; padding-bottom: 0; margin-bottom: 24px; }
+        .summary-val { color: var(--text-main); font-weight: 600; text-align: right; }
+        .total-price { font-size: 32px; font-weight: 800; color: var(--text-main); }
+        .pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+        .pay-method { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: rgba(255,255,255,0.6); border: 2px solid rgba(0,0,0,0.05); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s; font-size: 15px; font-weight: 600; color: var(--text-muted); }
+        .pay-method.active { border-color: var(--success); background: rgba(16, 185, 129, 0.05); color: #059669; }
+        .btn-submit { width: 100%; padding: 16px; background: var(--primary); border: 1px solid #2563eb; color: #fff; font-size: 16px; font-weight: 600; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s; }
+        .btn-submit:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; background: #94a3b8; border-color: #cbd5e1; box-shadow: none;}
+
+        /* 订单页 */
+        #view-order { display: flex; flex-direction: column; align-items: center; padding-top: 50px; }
+        .ticket-wrapper { width: 100%; max-width: 600px; margin: auto; position: relative; z-index: 1; }
+        .ticket-header { padding: 40px 40px 30px; text-align: center; }
+        .price { font-size: 42px; font-weight: 800; color: var(--text-main); line-height: 1; margin: 0 0 10px; }
+        .product-name { color: var(--text-muted); font-size: 16px; font-weight: 500; }
+        .ticket-divider { height: 1px; width: 100%; position: relative; }
+        .ticket-divider::before { content: ""; position: absolute; left: 24px; right: 24px; top: 0; border-top: 2px dashed rgba(0,0,0,0.08); }
+        .ticket-body { padding: 30px 40px; }
+        .t-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; font-size: 15px; }
+        .t-label { color: var(--text-muted); font-weight: 500; }
+        .t-val { color: var(--text-main); font-weight: 600; text-align: right; font-family: monospace; font-size: 14px; }
+        .card-code-box { margin-top: 10px; padding: 24px; border-radius: var(--radius-md); text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); }
+        .cc-label { font-size: 13px; color: #059669; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .cc-value { font-size: 20px; font-weight: 700; color: #059669; font-family: monospace; letter-spacing: 1px; }
+
+        /* 后台管理 */
+        .admin-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 32px; padding: 32px; }
+        .admin-top h1 { margin: 0; font-size: 24px; font-weight: 800; color: var(--text-main); }
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+        .admin-nav a { display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 500; color: var(--text-muted); background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer;}
+        .admin-nav a:hover, .admin-nav a.active { color: var(--primary); background: rgba(255,255,255,0.9); border-color: var(--primary); }
+        .admin-box { padding: 32px; margin-bottom: 32px; }
+        .admin-box h2 { margin: 0 0 24px; font-size: 20px; font-weight: 600; color: var(--text-main); border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 16px; }
+        .admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; }
+        .admin-card { background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.04); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); font-size: 14px; font-weight: 600; text-transform: uppercase; }
+        .admin-card .num { display: block; font-size: 36px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; line-height: 1; text-transform: none; }
+        .admin-table-wrap { width: 100%; overflow-x: auto; border: 1px solid rgba(0,0,0,0.05); background: rgba(255,255,255,0.4); border-radius: 12px; }
+        .admin-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        .admin-table th, .admin-table td { padding: 16px 12px; border-bottom: 1px solid rgba(0,0,0,0.04); text-align: left; font-size: 14px; vertical-align: middle; color: var(--text-main); }
+        .admin-table th { color: var(--text-muted); font-weight: 600; font-size: 13px; text-transform: uppercase; background: rgba(0,0,0,0.02); border-bottom: 2px solid rgba(0,0,0,0.06); }
+        .inline-form { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+
+        /* 纯前端模拟导航按钮 */
+        .mock-nav { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 12px 20px; border-radius: 999px; box-shadow: 0 10px 30px rgba(59,130,246,0.4); z-index: 9999; cursor: pointer; font-weight: bold; border: none; font-size: 14px; }
+        .mock-nav:hover { background: var(--primary-hover); transform: scale(1.05); }
+
+        /* Toast 提示 */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; box-shadow: 0 10px 25px rgba(16,185,129,0.3); z-index: 10000; display: none; }
+    </style>
+</head>
+<body>
+    <div class="aurora-bg">
+        <div class="aurora-blob blob1"></div><div class="aurora-blob blob2"></div><div class="aurora-blob blob3"></div>
+    </div>
+
+    <!-- Toast 提示框 -->
+    <div id="toast" class="toast">操作成功</div>
+
+    <!-- 1. 前台首页 -->
+    <div id="view-index" class="view-section active">
+        <div class="wrap">
+            <header class="site-header">
+                <h1 class="site-title">发卡网 (前端模拟版)</h1>
+                <div class="header-stats">
+                    <div class="h-stat"><span id="front-stat-products">0</span>在售商品</div>
+                    <div class="h-stat"><span id="front-stat-stock">0</span>发卡库存</div>
+                </div>
+            </header>
+
+            <div id="announcement-container" class="glass-panel" style="padding: 20px 24px; margin-bottom: 32px; border-left: 4px solid var(--primary); border-radius: 12px; background: rgba(59, 130, 246, 0.05); display: none;">
+                <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    系统公告
+                </div>
+                <div id="announcement-text" style="color: var(--text-main); font-size: 14px; line-height: 1.8;"></div>
+            </div>
+
+            <div class="main-form">
+                <div class="products-area">
+                    <h2 class="section-title">选择商品</h2>
+                    <div class="product-grid" id="front-product-grid">
+                        <!-- JS 渲染商品 -->
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="checkout-panel glass-panel">
+                        <h2 class="section-title" style="margin-bottom: 24px;">结算确认</h2>
+                        <div class="summary-row"><span>已选商品</span><span class="summary-val" id="summary-name">未选择</span></div>
+                        
+                        <div id="summary-desc-box" style="margin-bottom: 16px; padding: 12px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.1); border-radius: var(--radius-md); font-size: 13px; color: var(--text-muted); line-height: 1.6; display: none;">
+                            <div id="summary-desc"></div>
+                        </div>
+
+                        <div class="summary-row"><span>支付总额</span><span class="total-price" id="summary-price">￥0.00</span></div>
+                        
+                        <div style="margin: 24px 0 12px; font-size: 14px; font-weight: 600; color: var(--text-muted);">支付方式</div>
+                        <div class="pay-methods">
+                            <label class="pay-method active" onclick="selectPay(this, '微信支付')">微信支付</label>
+                            <label class="pay-method" onclick="selectPay(this, '支付宝')">支付宝</label>
+                        </div>
+                        <button type="button" class="btn" style="width:100%;" id="btn-buy" onclick="handleBuy()">立即支付 (模拟购买)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 订单页 -->
+    <div id="view-order" class="view-section">
+        <div class="ticket-wrapper" style="padding-top: 50px;">
+            <div class="ticket glass-panel">
+                <div class="ticket-header">
+                    <div class="status-badge status-paid">已支付</div>
+                    <div class="price" id="order-price">￥0.00</div>
+                    <div class="product-name" id="order-name">商品名称</div>
+                </div>
+                <div class="ticket-divider"></div>
+                <div class="ticket-body">
+                    <div class="t-row"><span class="t-label">订单编号</span><span class="t-val" id="order-id"></span></div>
+                    <div class="t-row"><span class="t-label">支付方式</span><span class="t-val" id="order-paytype" style="font-family: inherit;"></span></div>
+                    <div class="t-row"><span class="t-label">创建时间</span><span class="t-val" id="order-time"></span></div>
+                    
+                    <div class="card-code-box">
+                        <div class="cc-label">发货卡密 (请妥善保存)</div>
+                        <div class="cc-value" id="order-card"></div>
+                    </div>
+
+                    <div style="display:flex; gap:16px; margin-top:30px;">
+                        <button class="btn" style="background: rgba(0,0,0,0.03); color: var(--text-main); border: 1px solid rgba(0,0,0,0.06); box-shadow:none; flex:1;" onclick="navTo('view-index')">返回首页继续购买</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 后台登录 -->
+    <div id="view-admin-login" class="view-section">
+        <div class="wrap-xs">
+            <div class="glass-panel" style="padding: 48px 40px;">
+                <h1 style="margin:0 0 32px; font-size:28px; text-align:center; font-weight:800; color:var(--text-main);">管理后台登录</h1>
+                <div style="text-align:center; color:var(--danger); margin-bottom:15px; font-size:13px;">前端模拟版：任意密码皆可登录</div>
+                <div style="margin-bottom:20px;"><input type="text" class="form-control" value="admin" placeholder="后台账号"></div>
+                <div style="margin-bottom:20px;"><input type="password" class="form-control" value="admin123" placeholder="后台密码"></div>
+                <button class="btn" style="width:100%; margin-top:12px;" onclick="navTo('view-admin')">登录后台</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 后台首页 -->
+    <div id="view-admin" class="view-section">
+        <div class="wrap">
+            <div class="admin-top glass-panel">
+                <div>
+                    <h1>发卡网后台 (模拟端)</h1>
+                    <div class="admin-nav">
+                        <a class="active" onclick="navTo('view-admin')">后台首页</a>
+                        <a onclick="navTo('view-admin-upload')">上传卡密</a>
+                        <a onclick="navTo('view-admin-orders')">订单管理</a>
+                        <a onclick="navTo('view-index')">前往前台商城</a>
+                    </div>
+                </div>
+                <button class="btn btn-danger" style="padding:10px 16px;" onclick="navTo('view-admin-login')">退出</button>
+            </div>
+
+            <div class="admin-box glass-panel">
+                <div class="admin-cards">
+                    <div class="admin-card"><span class="num" id="stat-p-count">0</span>商品数</div>
+                    <div class="admin-card"><span class="num" id="stat-c-count">0</span>未售卡密</div>
+                    <div class="admin-card"><span class="num" id="stat-o-count">0</span>已售订单</div>
+                    <div class="admin-card"><span class="num" id="stat-o-money">0.00</span>总收入(元)</div>
+                </div>
+            </div>
+
+            <div class="admin-box glass-panel">
+                <h2>系统公告设置</h2>
+                <div class="inline-form" style="align-items: flex-end;">
+                    <textarea id="input-announcement" class="form-control" rows="2" style="flex:1; min-width:300px; resize:vertical;" placeholder="输入公告内容，支持HTML"></textarea>
+                    <button class="btn" onclick="saveAnnouncement()">保存公告</button>
+                </div>
+            </div>
+
+            <div class="admin-box glass-panel">
+                <h2>新增商品</h2>
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <div class="inline-form" style="margin-bottom:0;">
+                        <input type="text" id="input-p-id" class="form-control" style="flex:1; min-width:150px;" placeholder="商品编号 (例: card_1)">
+                        <input type="text" id="input-p-name" class="form-control" style="flex:2; min-width:200px;" placeholder="商品名称">
+                        <input type="number" id="input-p-price" class="form-control" style="flex:1; min-width:100px;" placeholder="价格">
+                    </div>
+                    <textarea id="input-p-desc" class="form-control" rows="2" placeholder="商品介绍（显示在前台商品卡片下方，支持HTML）"></textarea>
+                    <button class="btn" style="align-self:flex-start;" onclick="createProduct()">立即新增</button>
+                </div>
+            </div>
+
+            <div class="admin-box glass-panel">
+                <h2>商品管理</h2>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>编号</th><th>名称/介绍</th><th>价格</th><th>库存</th><th>操作</th></tr></thead>
+                        <tbody id="admin-product-list">
+                            <!-- JS 渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 后台传卡 -->
+    <div id="view-admin-upload" class="view-section">
+        <div class="wrap-sm">
+            <div class="admin-box glass-panel">
+                <h1 style="margin: 0 0 24px; font-size: 26px; font-weight: 800; color: var(--text-main);">上传卡密</h1>
+                <div class="admin-nav" style="border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 24px; margin-bottom: 32px;">
+                    <a onclick="navTo('view-admin')">后台首页</a>
+                    <a class="active" onclick="navTo('view-admin-upload')">上传卡密</a>
+                    <a onclick="navTo('view-admin-orders')">订单管理</a>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:10px; font-size:14px; font-weight:600; color:var(--text-main);">选择商品</label>
+                    <select class="form-control" id="upload-select" style="padding:16px;">
+                        <!-- JS 渲染 -->
+                    </select>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:10px; font-size:14px; font-weight:600; color:var(--text-main);">卡密内容 (一行一条)</label>
+                    <textarea id="upload-cards" class="form-control" style="min-height:250px; font-family:monospace; resize:vertical;" placeholder="A001&#10;A002&#10;A003"></textarea>
+                </div>
+                <button class="btn" style="min-width:160px;" onclick="uploadCards()">批量导入卡密</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 后台订单列表 -->
+    <div id="view-admin-orders" class="view-section">
+        <div class="wrap">
+            <div class="admin-box glass-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: var(--text-main);">订单明细</h1>
+                    <button class="btn btn-danger" style="padding: 10px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;" onclick="clearAllOrders()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        一键清空全部订单
+                    </button>
+                </div>
+                <div class="admin-nav" style="border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 24px; margin-bottom: 32px;">
+                    <a onclick="navTo('view-admin')">后台首页</a>
+                    <a onclick="navTo('view-admin-upload')">上传卡密</a>
+                    <a class="active" onclick="navTo('view-admin-orders')">订单管理</a>
+                </div>
+
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>订单号</th><th>商品</th><th>金额</th><th>发货卡密</th><th>支付方式</th><th>时间</th></tr></thead>
+                        <tbody id="admin-order-list">
+                            <!-- JS 渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右下角悬浮入口 -->
+    <button class="mock-nav" onclick="toggleMode()">切换 前台/后台</button>
+
+    <!-- ================= JS 纯前端模拟逻辑 ================= -->
+    <script>
+        // 1. 初始化本地数据库 (LocalStorage)
+        const defaultDb = {
+            announcement: '<span style="color:#ef4444">🔥 今日限时特惠：高级月卡直降5元，库存有限先到先得！</span>',
+            products: [
+                { id: 'card_01', name: '高级月卡会员', price: 29.90, desc: '解锁所有基础高级功能，购买后系统将自动发送激活码。', cards: ['KM-AAAA-1111', 'KM-BBBB-2222', 'KM-CCCC-3333'] },
+                { id: 'card_02', name: '绝版体验卡', price: 9.90, desc: '用于内测的体验卡，现已停止发售。', cards: [] },
+                { id: 'card_03', name: '年卡超级会员', price: 199.00, desc: '全站SVIP特权，买一年送三个月！独享专属客服通道。', cards: ['SVIP-99999999'] }
+            ],
+            orders: []
+        };
+
+        let db = JSON.parse(localStorage.getItem('faka_mock_db'));
+        if (!db) {
+            db = defaultDb;
+            saveDb();
+        }
+
+        function saveDb() {
+            localStorage.setItem('faka_mock_db', JSON.stringify(db));
+        }
+
+        // 2. 状态变量
+        let selectedProductId = '';
+        let selectedPayType = '微信支付';
+        let currentMode = 'front'; // 'front' or 'admin'
+
+        // 3. UI 切换与吐司提示
+        function navTo(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            
+            if(viewId === 'view-index') renderFrontend();
+            if(viewId === 'view-admin') renderAdmin();
+            if(viewId === 'view-admin-upload') renderAdminUpload();
+            if(viewId === 'view-admin-orders') renderAdminOrders();
+        }
+
+        function toggleMode() {
+            if(currentMode === 'front') {
+                currentMode = 'admin';
+                navTo('view-admin-login');
+            } else {
+                currentMode = 'front';
+                navTo('view-index');
+            }
+        }
+
+        function showToast(msg, isErr=false) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.background = isErr ? '#ef4444' : '#10b981';
+            t.style.boxShadow = isErr ? '0 10px 25px rgba(239,68,68,0.3)' : '0 10px 25px rgba(16,185,129,0.3)';
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        // ================= 核心业务逻辑 =================
+
+        // 【前台】渲染商城
+        function renderFrontend() {
+            // 公告
+            const annBox = document.getElementById('announcement-container');
+            if (db.announcement && db.announcement.trim() !== '') {
+                document.getElementById('announcement-text').innerHTML = db.announcement;
+                annBox.style.display = 'block';
+            } else {
+                annBox.style.display = 'none';
+            }
+
+            // 统计
+            let totalStock = 0;
+            const grid = document.getElementById('front-product-grid');
+            grid.innerHTML = '';
+            
+            if (db.products.length === 0) {
+                grid.innerHTML = '<div class="glass-panel" style="padding:40px; text-align:center; color:var(--text-muted); grid-column: 1 / -1;">暂无商品</div>';
+            }
+
+            let firstAvailableId = '';
+
+            db.products.forEach(p => {
+                const stock = p.cards.length;
+                totalStock += stock;
+                const isOut = stock <= 0;
+                
+                if(!isOut && !firstAvailableId) firstAvailableId = p.id;
+
+                const html = `
+                    <label class="product-card ${isOut ? 'disabled' : ''}" onclick="if(!${isOut}) selectProduct('${p.id}')" id="card-${p.id}">
+                        <div class="pc-top">
+                            <h3 class="pc-title">${p.name}</h3>
+                            <span class="badge ${isOut ? 'badge-danger' : 'badge-success'}">${isOut ? '缺货' : '充足'}</span>
+                        </div>
+                        ${p.desc ? `<div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${p.desc}</div>` : ''}
+                        <div class="pc-price"><span>￥</span>${parseFloat(p.price).toFixed(2)}</div>
+                        <div class="pc-stock"><span>编号: ${p.id}</span><span>库存: ${stock}</span></div>
+                    </label>
+                `;
+                grid.innerHTML += html;
+            });
+
+            document.getElementById('front-stat-products').innerText = db.products.length;
+            document.getElementById('front-stat-stock').innerText = totalStock;
+
+            // 默认选中第一个
+            if (firstAvailableId) {
+                selectProduct(firstAvailableId);
+            } else {
+                document.getElementById('summary-name').innerText = '未选择';
+                document.getElementById('summary-price').innerText = '￥0.00';
+                document.getElementById('summary-desc-box').style.display = 'none';
+                document.getElementById('btn-buy').disabled = true;
+            }
+        }
+
+        // 【前台】选中商品
+        function selectProduct(pid) {
+            selectedProductId = pid;
+            const p = db.products.find(x => x.id === pid);
+            
+            document.querySelectorAll('.product-card').forEach(el => el.classList.remove('selected'));
+            document.getElementById('card-' + pid).classList.add('selected');
+
+            document.getElementById('summary-name').innerText = p.name;
+            document.getElementById('summary-price').innerText = '￥' + parseFloat(p.price).toFixed(2);
+            
+            const descBox = document.getElementById('summary-desc-box');
+            if (p.desc) {
+                document.getElementById('summary-desc').innerHTML = p.desc;
+                descBox.style.display = 'block';
+            } else {
+                descBox.style.display = 'none';
+            }
+            document.getElementById('btn-buy').disabled = false;
+        }
+
+        function selectPay(el, type) {
+            document.querySelectorAll('.pay-method').forEach(x => x.classList.remove('active'));
+            el.classList.add('active');
+            selectedPayType = type;
+        }
+
+        // 【前台】点击购买 (核心防并发/扣库存模拟)
+        function handleBuy() {
+            const p = db.products.find(x => x.id === selectedProductId);
+            if(!p || p.cards.length <= 0) {
+                showToast('该商品已售罄！', true);
+                renderFrontend(); // 刷新状态
+                return;
+            }
+
+            // 模拟扣库存与发卡
+            const cardCode = p.cards.shift(); // 弹出一个卡密
+            saveDb(); // 立即保存扣除后的库存
+
+            // 模拟创建订单
+            const order = {
+                id: 'ORD' + new Date().getTime(),
+                payId: 'PAY_' + Math.floor(Math.random()*1000000),
+                pName: p.name,
+                price: parseFloat(p.price).toFixed(2),
+                payType: selectedPayType,
+                card: cardCode,
+                time: new Date().toLocaleString()
+            };
+            db.orders.push(order);
+            saveDb();
+
+            showToast('支付成功，已自动发货！');
+            
+            // 跳转到订单页并渲染
+            document.getElementById('order-price').innerText = '￥' + order.price;
+            document.getElementById('order-name').innerText = order.pName;
+            document.getElementById('order-id').innerText = order.id;
+            document.getElementById('order-paytype').innerText = order.payType;
+            document.getElementById('order-time').innerText = order.time;
+            document.getElementById('order-card').innerText = order.card;
+            
+            navTo('view-order');
+        }
+
+        // 【后台】渲染Dashboard
+        function renderAdmin() {
+            document.getElementById('input-announcement').value = db.announcement;
+
+            let unused = 0;
+            db.products.forEach(p => unused += p.cards.length);
+            
+            let money = 0;
+            db.orders.forEach(o => money += parseFloat(o.price));
+
+            document.getElementById('stat-p-count').innerText = db.products.length;
+            document.getElementById('stat-c-count').innerText = unused;
+            document.getElementById('stat-o-count').innerText = db.orders.length;
+            document.getElementById('stat-o-money').innerText = money.toFixed(2);
+
+            const tbody = document.getElementById('admin-product-list');
+            tbody.innerHTML = '';
+            db.products.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-family:monospace;">${p.id}</td>
+                        <td>
+                            <div style="font-weight:600; color:var(--text-main);">${p.name}</div>
+                            <div style="font-size:12px; color:var(--text-muted); margin-top:4px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.desc || '-'}</div>
+                        </td>
+                        <td style="font-weight:bold;">￥${parseFloat(p.price).toFixed(2)}</td>
+                        <td><span class="badge badge-success">${p.cards.length} 张</span></td>
+                        <td>
+                            <button class="btn btn-danger" style="padding:6px 12px; font-size:12px; min-width:auto;" onclick="deleteProduct('${p.id}')">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function saveAnnouncement() {
+            db.announcement = document.getElementById('input-announcement').value;
+            saveDb();
+            showToast('公告保存成功！');
+        }
+
+        function createProduct() {
+            const id = document.getElementById('input-p-id').value.trim();
+            const name = document.getElementById('input-p-name').value.trim();
+            const price = document.getElementById('input-p-price').value.trim();
+            const desc = document.getElementById('input-p-desc').value.trim();
+
+            if(!id || !name || !price) return showToast('请填写完整商品信息', true);
+            if(db.products.find(x => x.id === id)) return showToast('商品编号已存在', true);
+
+            db.products.push({ id, name, price, desc, cards: [] });
+            saveDb();
+            showToast('新增商品成功！');
+            
+            // 清空表单
+            document.getElementById('input-p-id').value = '';
+            document.getElementById('input-p-name').value = '';
+            document.getElementById('input-p-price').value = '';
+            document.getElementById('input-p-desc').value = '';
+            
+            renderAdmin();
+        }
+
+        function deleteProduct(id) {
+            if(!confirm('确定删除该商品？这也会删除其下所有未售卡密！')) return;
+            db.products = db.products.filter(x => x.id !== id);
+            saveDb();
+            showToast('删除成功');
+            renderAdmin();
+        }
+
+        // 【后台】传卡
+        function renderAdminUpload() {
+            const sel = document.getElementById('upload-select');
+            sel.innerHTML = '';
+            db.products.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.name} (库存: ${p.cards.length})</option>`;
+            });
+        }
+
+        function uploadCards() {
+            const pid = document.getElementById('upload-select').value;
+            const text = document.getElementById('upload-cards').value;
+            if(!text.trim()) return showToast('卡密内容不能为空', true);
+
+            const lines = text.split('\n').map(x => x.trim()).filter(x => x !== '');
+            const p = db.products.find(x => x.id === pid);
+            if(p) {
+                p.cards.push(...lines);
+                saveDb();
+                showToast(`成功导入 ${lines.length} 张卡密！`);
+                document.getElementById('upload-cards').value = '';
+                renderAdminUpload(); // 更新下拉框里的库存数字
+            }
+        }
+
+        // 【后台】订单
+        function renderAdminOrders() {
+            const tbody = document.getElementById('admin-order-list');
+            tbody.innerHTML = '';
+            // 倒序展示最新订单
+            [...db.orders].reverse().forEach(o => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-family:monospace; color:var(--text-muted);">${o.id}<br><span style="font-size:12px;">${o.payId}</span></td>
+                        <td style="font-weight:600;">${o.pName}</td>
+                        <td style="font-weight:bold; color:var(--text-main);">￥${o.price}</td>
+                        <td style="font-family:monospace; color:var(--success);">${o.card}</td>
+                        <td><span class="badge badge-success">${o.payType}</span></td>
+                        <td style="color:var(--text-muted); font-size:13px;">${o.time}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 【后台】清空所有订单
+        function clearAllOrders() {
+            if(!confirm('⚠️警告：确定要清空全部订单记录吗？清空后数据无法恢复！')) return;
+            db.orders = [];
+            saveDb();
+            showToast('已清空全部订单！');
+            renderAdminOrders();
+        }
+
+        // 初始化载入前台
+        renderFrontend();
+    </script>
+</body>
+</html>
